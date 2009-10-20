@@ -1,0 +1,66 @@
+<html>
+<head>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+  <script src="../jsobjdump.js"></script>
+  <script>
+  var input_obj;
+  $(function() {
+    function show() {
+      try {
+        var input_str  = $('#input').val();
+        var cmd = 'input_obj = '+input_str;
+        console.log(cmd);
+        eval(cmd);
+        var output_str;
+        var mode = $('input[name=group1]:checked').val();
+        switch (mode) {
+          case 'JSON_JS'  :  output_str = JSON.stringify(JsObjDump.annotate_list(input_obj), null, 2); break;
+          case 'JSON'     :  output_str = JSON.stringify(input_obj,null,2); break;
+          case 'toSource' :  output_str = input_obj.toSource(); break;
+          default: output_str = 'ERROR'; break;
+        }
+        if (typeof output_str === 'undefined') { output_str='UNDEFINED'; }
+        $('#output').val(output_str);
+      } catch(e) {
+        $('#output').val('ERROR: '+e);
+      }      
+    }
+    $('#input').change(show);
+    $(document).click(show);
+  });
+  
+  var demo1 = {
+    name:'An object with a function',
+    func:function(animal1,animal2,combat_type) { return animal1>animal2; }
+  };
+  
+  function DemoClass() {
+    this.name = 'An object with a function + prototype';
+    this.func = function(animal1,animal2,combat_type) { return animal1>animal2; };
+  }
+  DemoClass.prototype.do_combat = function(use_axe) { return 'you are sick!'; };
+  var demo2 = new DemoClass();
+  
+  
+  var demo3 = [{
+    name:'An object that points to itself!'
+  }];
+  demo3[0].loop_back = demo3;
+  
+  </script>
+  <style>
+  textarea { width:40em; height:20em; padding:0.5em; }
+  </style>
+</head>
+<body>
+  <h1>Test console</h1>
+  <h2>input_obj</h2>
+  <textarea id="input"></textarea>
+  <h2>output_obj</h2>
+  <input type="radio" name="group1" value="JSON" checked>JSON.stringify
+  <input type="radio" name="group1" value="toSource" >toSource
+  <input type="radio" name="group1" value="JSON_JS">JSON_JS
+  <br/>
+  <textarea id="output"></textarea>
+</body>
+</html>

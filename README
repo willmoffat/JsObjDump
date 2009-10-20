@@ -1,0 +1,4 @@
+
+Copy the objects to be dumped and annotate it with object IDs, cycles, functions, undefined, prototype properties.
+The resulting array is suitable for JSON.stringify()
+
