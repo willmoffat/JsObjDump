@@ -31,7 +31,7 @@ var JsObjDump = (function() {
     }
   }
 
-  function annotate(obj,depth) {
+  function annotate_prim(obj,depth) {
     var typ, // object's type
     newobj;  // a copy of obj
 
@@ -72,7 +72,7 @@ var JsObjDump = (function() {
       newobj = [];
       //DOC:
       for (var i=obj.length;i>0;i--) {
-        newobj[i] = annotate(obj[i-1], depth+1);
+        newobj[i] = annotate_prim(obj[i-1], depth+1);
       }
       newobj[0]='~~ID:'+id+'~~';
     } else {
@@ -80,29 +80,39 @@ var JsObjDump = (function() {
       newobj={ '~~ID~~': id };
       if (typ==='function') { newobj['~~FUNC~~'] = get_function_sig(obj); }
       //WILL: what would be useuful to display? if (obj.constructor) { newobj['~~CONS~~']=obj.constructor+''; }
-      //      if (obj.__proto__ && obj.__proto__!==Object.prototype) { newobj['~~PROTO~~'] = annotate(obj.__proto__); }
+      //      if (obj.__proto__ && obj.__proto__!==Object.prototype) { newobj['~~PROTO~~'] = annotate_prim(obj.__proto__); }
       for (var key in obj) {
         if (key==='prototype') { continue; } //WILL: just strip boring prototypes??
         var inherited = Object.hasOwnProperty.call(obj, key) ? '' : '~~INHERTIED~~';
-        newobj[inherited+key] = annotate(obj[key], depth+1);
+        newobj[inherited+key] = annotate_prim(obj[key], depth+1);
       }
     }
     return newobj;
   }
-
+  
+  function init() {
+    set_prefs(); 
+    line_count = 0;
+    seen = [];    // list of objects seen since init() was last called
+  }
+  
+  function annotate(obj) {
+    init();
+    return annotate_prim(obj, 1);
+  }
+  
   function annotate_list () { /*arguments*/
-    set_prefs();
+    init();
 
     var annotated = []; // copy of arguments, annotated with links to cycles, functions, undefined
-    seen = [];          // list of objects anywhere in the hierarchy of all the args
 
     for (var i=0;i<arguments.length;i++) {
       line_count = 0;  // number of properties to show per object
-      annotated[i] = annotate( arguments[i] , 1 );
+      annotated[i] = annotate_prim( arguments[i] , 1 );
     }
     return annotated;
   }
-  return {annotate_list:annotate_list, DEFAULT_SKIP:DEFAULT_SKIP}; // JsObjDump
+  return {annotate_list:annotate_list, annotate:annotate, DEFAULT_SKIP:DEFAULT_SKIP}; // JsObjDump
 }
 )
 ();
