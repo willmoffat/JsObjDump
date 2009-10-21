@@ -60,6 +60,7 @@ var JsObjDump = (function() {
     var id = seen.indexOf(obj);
     if (id !== -1) {
       // yes, then link to it
+      ensureIDTagged(obj, id)
       return '~~LINK:'+id+'~~';
     } else {
       // no, give it a new id
@@ -72,13 +73,12 @@ var JsObjDump = (function() {
     if (typ==='array') {
       newobj = [];
       //DOC:
-      for (var i=obj.length;i>0;i--) {
-        newobj[i] = annotate_prim(obj[i-1], depth+1);
+      for (var i=obj.length-1;i>=0;i--) {
+        newobj[i] = annotate_prim(obj[i], depth+1);
       }
-      newobj[0]='~~ID:'+id+'~~';
     } else {
       //object or function
-      newobj={ '~~ID~~': id };
+      newobj={};
       if (typ==='function') { newobj['~~FUNC~~'] = get_function_sig(obj); }
       //WILL: what would be useuful to display? if (obj.constructor) { newobj['~~CONS~~']=obj.constructor+''; }
       //      if (obj.__proto__ && obj.__proto__!==Object.prototype) { newobj['~~PROTO~~'] = annotate_prim(obj.__proto__); }
@@ -89,6 +89,15 @@ var JsObjDump = (function() {
       }
     }
     return newobj;
+    
+    function ensureIDTagged(obj, id) {
+      if (isArray(obj)) {
+        var tag = '~~ID:'+id+'~~';
+        if (obj[0] !== tag) obj.unshift(tag);
+        return;
+      }
+      obj['~~ID~~']=id;
+    }
   }
   
   function init() {
