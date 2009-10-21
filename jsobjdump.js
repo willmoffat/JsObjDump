@@ -42,9 +42,10 @@ var JsObjDump = (function() {
     if (typ==='object') {
       // JS spec bugs
       if (!obj) { typ = 'null'; }
-      //HACK: TODO if (d instanceof Date)
+      if (obj instanceof Date) { typ = 'date';}
       else if (isArray(obj)) { typ = 'array'; } // WILL: this will stop full dump on a = new Array(11,22,33); a.will=true;
     }
+    if (obj instanceof RegExp) { typ = 'regexp';}
     if (typ!=='object' && typ!=='function' && typ!=='array') { // is it a boolean, number, string, undefined, null
       if (typ==='undefined') { return '~~UNDEFINED~~'; }
       else {                  return obj; }
