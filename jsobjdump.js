@@ -13,6 +13,8 @@ var JsObjDump = (function() {
     MAX_DEPTH       = o.MAX_DEPTH       || 8;            // bail if we go deeper than x levels
     FUNCTION_SOURCE = o.FUNCTION_SOURCE || false;        // show full source code of functions
     SKIP            = o.SKIP            || DEFAULT_SKIP; // list of objects to ignore (defaults set by acreboot.js)
+    SKIP_FUNCTIONS  = o.SKIP_FUNCTIONS  || false;
+    SKIP_INHERITED  = o.SKIP_INHERITED  || false;
   }
 
   var toString = Object.prototype.toString;
@@ -84,8 +86,15 @@ var JsObjDump = (function() {
       //      if (obj.__proto__ && obj.__proto__!==Object.prototype) { newobj['~~PROTO~~'] = annotate_prim(obj.__proto__); }
       for (var key in obj) {
         if (key==='prototype') { continue; } //WILL: just strip boring prototypes??
-        var inherited = Object.hasOwnProperty.call(obj, key) ? '' : '~~INHERTIED~~';
-        newobj[inherited+key] = annotate_prim(obj[key], depth+1);
+        var prefix = '';
+        //If this key was inherited
+        if (!Object.hasOwnProperty.call(obj,key)) {
+          if (SKIP_INHERITED) { continue; }
+          prefix += "~~INHERITED~~";
+        }
+        var value = obj[key];
+        if (typeof value === "function" && SKIP_FUNCTIONS) { continue; }
+        newobj[prefix+key] = annotate_prim(value, depth+1);
       }
     }
     return newobj;
