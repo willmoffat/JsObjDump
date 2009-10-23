@@ -1,0 +1,17 @@
+<script src="../jsobjdump.js"></script>
+<script>
+window.addEventListener('load',function() {
+  console.options = {
+    MAX_LINE_COUNT  : 10000,         // bail if we generate more lines than this                  
+    MAX_DEPTH       : 15,            // bail if we go deeper than x levels
+    FUNCTION_SOURCE : false,        // show full source code of functions
+    SKIP            : [window.navigator.plugins, window.navigator.mimeTypes],
+    SKIP_FUNCTIONS  : false,
+    SHOW_PROTO      : true,
+    SHOW_CONS       : true
+  };
+  var p = document.createElement('pre');
+  p.textContent=JSON.stringify(JsObjDump.annotate(this), null, 2); 
+  document.body.appendChild(p);
+  }, false);
+</script>

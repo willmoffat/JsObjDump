@@ -4,6 +4,12 @@
   <script src="../jsobjdump.js"></script>
   <script>
   var input_obj;
+  // WILL: should these be the defaults?
+  console.options = {
+    SHOW_PROTO      : true,    // walk obj.__proto__ so don't show inherited properties inline
+    SHOW_CONS       : true
+  };
+
   $(function() {
     function show() {
       try {

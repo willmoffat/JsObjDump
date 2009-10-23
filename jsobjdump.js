@@ -7,9 +7,9 @@ var JsObjDump = (function() {
   var line_count;
   var DEFAULT_SKIP = []; //TODO: init with contents of 'this'
 
-  var MAX_LINE_COUNT, MAX_DEPTH, FUNCTION_SOURCE, SKIP, SKIP_FUNCTIONS, SKIP_INHERITED;
-  //TODO: var BORING_CONS = [Object, Function];
-  //TODO: var BORING_PROTO = [Object.prototype, Function.prototype];
+  var MAX_LINE_COUNT, MAX_DEPTH, FUNCTION_SOURCE, SKIP, SKIP_FUNCTIONS, SHOW_PROTO, SHOW_CONS;
+  var BORING_CONS  = [Object, Function];
+  var BORING_PROTO = [Object.prototype, Function.prototype];
   function set_prefs() {
     var o = console.options ? console.options : {};
     MAX_LINE_COUNT  = o.MAX_LINE_COUNT  || 3000;         // bail if we generate more lines than this
@@ -17,7 +17,8 @@ var JsObjDump = (function() {
     FUNCTION_SOURCE = o.FUNCTION_SOURCE || false;        // show full source code of functions
     SKIP            = o.SKIP            || DEFAULT_SKIP; // list of objects to ignore (defaults set by acreboot.js)
     SKIP_FUNCTIONS  = o.SKIP_FUNCTIONS  || false;
-    SKIP_INHERITED  = o.SKIP_INHERITED  || false;
+    SHOW_PROTO      = o.SHOW_PROTO      || false;
+    SHOW_CONS       = o.SHOW_CONS       || false;
   }
 
   var toString = Object.prototype.toString;
@@ -98,23 +99,24 @@ var JsObjDump = (function() {
       } else {
         //object or function
         if (typ==='function') { newobj['~~FUNC~~'] = get_function_sig(obj); }
-        /* TODO:
-        var cons = obj.constructor;
-        var proto = obj['__proto__'];
-        if (cons && BORING_CONS.indexOf(cons)===-1) {
-          newobj['~~CONS~~'] = annotate_prim(cons, depth+1);
+        if (SHOW_CONS) {
+          var cons = obj.constructor;
+          if (cons && BORING_CONS.indexOf(cons)===-1) {
+            newobj['~~CONS~~'] = annotate_prim(cons, depth+1);
+          }
         }
-        if (proto && BORING_PROTO.indexOf(proto)===-1) {
-          newobj['~~PROTO~~'] = annotate_prim(proto,depth+1); //TODO: more boring protos? Date, Regexp?
+        if (SHOW_PROTO) {
+          var proto = obj['__proto__'];
+          if (proto && BORING_PROTO.indexOf(proto)===-1) {
+            newobj['~~PROTO~~'] = annotate_prim(proto,depth+1); //TODO: more boring protos? Date, Regexp?
+          }
         }
-        */
-        
         for (var key in obj) {
-          if (key==='prototype') { continue; } //WILL: just strip boring prototypes??
+          if (key==='prototype' && !SHOW_PROTO) { continue; }
           var prefix = '';
           //If this key was inherited
           if (!Object.hasOwnProperty.call(obj,key)) {
-            if (SKIP_INHERITED) { continue; }
+            if (SHOW_PROTO) { continue; }
             prefix += "~~INHERITED~~";
           }
           var value = obj[key];
@@ -130,8 +132,6 @@ var JsObjDump = (function() {
   
   function init() {
     set_prefs(); 
-    
-    seen = [];    // list of objects seen in this call to annotate()
     line_count = 0;
     seen = [];    // list of objects seen since init() was last called
     newseen = [];
