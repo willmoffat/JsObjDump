@@ -2,11 +2,13 @@
 var JsObjDump = (function() {
 
   var seen;
+  var newseen; // same as seen, but points to newobjs
   var line_count;
-  var DEFAULT_SKIP = [];
+  var DEFAULT_SKIP = []; //TODO: init with contents of 'this'
 
-  var MAX_LINE_COUNT, MAX_DEPTH, FUNCTION_SOURCE, SKIP;
-
+  var MAX_LINE_COUNT, MAX_DEPTH, FUNCTION_SOURCE, SKIP, SKIP_FUNCTIONS, SKIP_INHERITED;
+  //TODO: var BORING_CONS = [Object, Function];
+  //TODO: var BORING_PROTO = [Object.prototype, Function.prototype];
   function set_prefs() {
     var o = console.options ? console.options : {};
     MAX_LINE_COUNT  = o.MAX_LINE_COUNT  || 3000;         // bail if we generate more lines than this
@@ -33,7 +35,17 @@ var JsObjDump = (function() {
     }
   }
 
+  function ensureIDTagged(obj, id) {
+    console.log('ensureIDTagged id', id);
+    if (isArray(obj)) {
+      var tag = '~~ID:'+id+'~~';
+      if (obj[0] !== tag) { obj.unshift(tag); }
+    } else {
+    obj['~~ID~~']=id;
+    }
+  }
   function annotate_prim(obj,depth) {
+    if (!depth) { throw new Error("Missing depth"); }
     var typ, // object's type
     newobj;  // a copy of obj
 
@@ -57,55 +69,63 @@ var JsObjDump = (function() {
     if (depth>1 && SKIP.indexOf(obj)!==-1 ) {
       return '~~SKIPPED~~';
     }
+    if (depth>MAX_DEPTH) {
+      return '~~TOO_DEEP~~';
+    }
 
     // have we already seen this object?
     var id = seen.indexOf(obj);
     if (id !== -1) {
       // yes, then link to it
-      ensureIDTagged(obj, id)
+      ensureIDTagged(newseen[id], id);
       return '~~LINK:'+id+'~~';
     } else {
       // no, give it a new id
       id = seen.length;
-      seen[id]=obj;
     }
 
-    if (depth>MAX_DEPTH) { return '~~TOO_DEEP~~'; }
+    // Create a new object (or array) reference
+    // and mark it as visited before going further
+    newobj = (typ==='array') ? [] : {};
+    seen[id]=obj;
+    newseen[id]=newobj;
 
-    if (typ==='array') {
-      newobj = [];
-      //DOC:
-      for (var i=obj.length-1;i>=0;i--) {
-        newobj[i] = annotate_prim(obj[i], depth+1);
-      }
-    } else {
-      //object or function
-      newobj={};
-      if (typ==='function') { newobj['~~FUNC~~'] = get_function_sig(obj); }
-      //WILL: what would be useuful to display? if (obj.constructor) { newobj['~~CONS~~']=obj.constructor+''; }
-      //      if (obj.__proto__ && obj.__proto__!==Object.prototype) { newobj['~~PROTO~~'] = annotate_prim(obj.__proto__); }
-      for (var key in obj) {
-        if (key==='prototype') { continue; } //WILL: just strip boring prototypes??
-        var prefix = '';
-        //If this key was inherited
-        if (!Object.hasOwnProperty.call(obj,key)) {
-          if (SKIP_INHERITED) { continue; }
-          prefix += "~~INHERITED~~";
+    try {
+      if (typ==='array') {
+        //DOC:
+        for (var i=obj.length-1;i>=0;i--) {
+          newobj[i] = annotate_prim(obj[i], depth+1);
         }
-        var value = obj[key];
-        if (typeof value === "function" && SKIP_FUNCTIONS) { continue; }
-        newobj[prefix+key] = annotate_prim(value, depth+1);
+      } else {
+        //object or function
+        if (typ==='function') { newobj['~~FUNC~~'] = get_function_sig(obj); }
+        /* TODO:
+        var cons = obj.constructor;
+        var proto = obj['__proto__'];
+        if (cons && BORING_CONS.indexOf(cons)===-1) {
+          newobj['~~CONS~~'] = annotate_prim(cons, depth+1);
+        }
+        if (proto && BORING_PROTO.indexOf(proto)===-1) {
+          newobj['~~PROTO~~'] = annotate_prim(proto,depth+1); //TODO: more boring protos? Date, Regexp?
+        }
+        */
+        
+        for (var key in obj) {
+          if (key==='prototype') { continue; } //WILL: just strip boring prototypes??
+          var prefix = '';
+          //If this key was inherited
+          if (!Object.hasOwnProperty.call(obj,key)) {
+            if (SKIP_INHERITED) { continue; }
+            prefix += "~~INHERITED~~";
+          }
+          var value = obj[key];
+          if (typeof value === "function" && SKIP_FUNCTIONS) { continue; }
+          newobj[prefix+key] = annotate_prim(value, depth+1);
+        }
       }
-    }
-    return newobj;
-    
-    function ensureIDTagged(obj, id) {
-      if (isArray(obj)) {
-        var tag = '~~ID:'+id+'~~';
-        if (obj[0] !== tag) obj.unshift(tag);
-        return;
-      }
-      obj['~~ID~~']=id;
+      return newobj;
+    } catch(e) {
+      return "~~ERROR~~:"+e;
     }
   }
   
@@ -113,6 +133,7 @@ var JsObjDump = (function() {
     set_prefs(); 
     line_count = 0;
     seen = [];    // list of objects seen since init() was last called
+    newseen = [];
   }
   
   function annotate(obj) {
