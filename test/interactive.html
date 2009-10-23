@@ -14,9 +14,9 @@
         var output_str;
         var mode = $('input[name=group1]:checked').val();
         switch (mode) {
-          case 'JSON_JS'  :  output_str = JSON.stringify(JsObjDump.annotate_list(input_obj), null, 2); break;
+          case 'JSON_JS'  :  output_str = JSON.stringify(JsObjDump.annotate(input_obj), null, 2); break;
           case 'JSON'     :  output_str = JSON.stringify(input_obj,null,2); break;
-          case 'toSource' :  output_str = input_obj.toSource(); break;
+          case 'toSource' :  output_str = Object.prototype.toSource.call(input_obj); break;
           default: output_str = 'ERROR'; break;
         }
         if (typeof output_str === 'undefined') { output_str='UNDEFINED'; }
@@ -27,6 +27,7 @@
     }
     $('#input').change(show);
     $(document).click(show);
+    show();
   });
   
   var demo1 = {
@@ -47,6 +48,18 @@
   }];
   demo3[0].loop_back = demo3;
   
+  var demo4 = {
+    one:[11,"two is a reference to sibling",33],
+    two:'dummy'
+  };
+  demo4.two=demo4.one;
+  
+  /* BUG: this is broken, because we add an ID to the array as we walk it */
+  var demo5 = [11,"first item of the list is self-reference",33];
+  demo5[0]=demo5;
+  
+  
+  
   </script>
   <style>
   textarea { width:40em; height:20em; padding:0.5em; }
@@ -55,11 +68,11 @@
 <body>
   <h1>Test console</h1>
   <h2>input_obj</h2>
-  <textarea id="input"></textarea>
+  <textarea id="input">demo4</textarea>
   <h2>output_obj</h2>
-  <input type="radio" name="group1" value="JSON" checked>JSON.stringify
-  <input type="radio" name="group1" value="toSource" >toSource
-  <input type="radio" name="group1" value="JSON_JS">JSON_JS
+  <input type="radio" name="group1" value="JSON"            >JSON.stringify
+  <input type="radio" name="group1" value="toSource"        >toSource
+  <input type="radio" name="group1" value="JSON_JS" checked >JSON_JS
   <br/>
   <textarea id="output"></textarea>
 </body>
