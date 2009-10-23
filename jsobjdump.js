@@ -3,6 +3,7 @@ var JsObjDump = (function() {
 
   var seen;
   var newseen; // same as seen, but points to newobjs
+  var arraysToTag; //list of [array, tag] pairs
   var line_count;
   var DEFAULT_SKIP = []; //TODO: init with contents of 'this'
 
@@ -36,12 +37,10 @@ var JsObjDump = (function() {
   }
 
   function ensureIDTagged(obj, id) {
-    console.log('ensureIDTagged id', id);
     if (isArray(obj)) {
-      var tag = '~~ID:'+id+'~~';
-      if (obj[0] !== tag) { obj.unshift(tag); }
+      arraysToTag.push([obj,'~~ID:'+id+'~~']);
     } else {
-    obj['~~ID~~']=id;
+      obj['~~ID~~']=id;
     }
   }
   function annotate_prim(obj,depth) {
@@ -134,11 +133,21 @@ var JsObjDump = (function() {
     line_count = 0;
     seen = [];    // list of objects seen since init() was last called
     newseen = [];
+    arraysToTag = [];
+  }
+  
+  function post() {
+    for (var i = 0; i < arraysToTag.length; i++) {
+      arraysToTag[i][0].unshift(arraysToTag[i][1]);
+    }
+    arraysToTag = null;
   }
   
   function annotate(obj) {
     init();
-    return annotate_prim(obj, 1);
+    var result = annotate_prim(obj, 1);
+    post();
+    return result;
   }
   
   function annotate_list () { /*arguments*/
@@ -150,6 +159,8 @@ var JsObjDump = (function() {
       line_count = 0;  // number of properties to show per object
       annotated[i] = annotate_prim( arguments[i] , 1 );
     }
+    
+    post();
     return annotated;
   }
   return {annotate_list:annotate_list, annotate:annotate, DEFAULT_SKIP:DEFAULT_SKIP}; // JsObjDump
