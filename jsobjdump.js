@@ -16,9 +16,9 @@ var JsObjDump = (function() {
     MAX_DEPTH       = o.MAX_DEPTH       || 8;            // bail if we go deeper than x levels
     FUNCTION_SOURCE = o.FUNCTION_SOURCE || false;        // show full source code of functions
     SKIP            = o.SKIP            || DEFAULT_SKIP; // list of objects to ignore (defaults set by acreboot.js)
-    SKIP_FUNCTIONS  = o.SKIP_FUNCTIONS  || false;
-    SHOW_PROTO      = o.SHOW_PROTO      || false;
-    SHOW_CONS       = o.SHOW_CONS       || false;
+    SKIP_FUNCTIONS  = o.SKIP_FUNCTIONS  || false;        // show properties that are functions
+    SHOW_PROTO      = o.SHOW_PROTO      || false;        // walk .prototype & .__proto__
+    SHOW_CONS       = o.SHOW_CONS       || false;        // walk .constructor
   }
 
   var toString = Object.prototype.toString;
@@ -112,16 +112,18 @@ var JsObjDump = (function() {
           }
         }
         for (var key in obj) {
+          // Ignore .prototype?
           if (key==='prototype' && !SHOW_PROTO) { continue; }
-          var prefix = '';
-          //If this key was inherited
-          if (!Object.hasOwnProperty.call(obj,key)) {
-            if (SHOW_PROTO) { continue; }
-            prefix += "~~INHERITED~~";
-          }
+
+          // Ignore inherited keys?
+          if (!Object.hasOwnProperty.call(obj,key)) { continue; }
+          
           var value = obj[key];
+          
+          // Ignore functions?
           if (typeof value === "function" && SKIP_FUNCTIONS) { continue; }
-          newobj[prefix+key] = annotate_prim(value, depth+1);
+          
+          newobj[key] = annotate_prim(value, depth+1);
         }
       }
       return newobj;
